@@ -111,7 +111,7 @@ async def process_paragraph(
                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                             RETURNING relationship_id;
                             """,
-                            (triplet.head, triplet.tail, triplet.relationship_type, metadata["run_id"], src_type, dst_type, strat_id, lith_att_id, lith_id)
+                            (triplet.head[:250], triplet.tail[:250], triplet.relationship_type[:100], metadata["run_id"], src_type, dst_type, strat_id, lith_att_id, lith_id)
                         )
                         
                         relationship_id = await cur.fetchone()
@@ -183,9 +183,9 @@ async def init_db():
         await conn.execute(
             """
             CREATE TABLE relationships (
-                head character varying(200),
-                type character varying(100),
-                tail character varying(200),
+                head character varying(256),
+                type character varying(128),
+                tail character varying(256),
                 src_type character varying(38),
                 dst_type character varying(38),
                 strat_id integer,
