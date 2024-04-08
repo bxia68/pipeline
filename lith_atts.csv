@@ -1,0 +1,180 @@
+1,lenticular
+2,mounds
+3,tabular
+4,thinly bedded
+5,thickly bedded
+6,regularly bedded
+7,irregularly bedded
+8,wavy bedded
+9,massive 
+10,desiccation cracks
+11,birds eye
+12,salt hoppers
+13,ripple laminations
+14,climbing ripples
+15,algal laminations
+16,tabular cross beds
+17,cross-bedded
+18,trough cross beds
+19,hummocky cross stratification
+20,symmetric ripples
+21,asymmetric ripples
+22,dunes
+23,flaser beds
+24,laminated
+25,sole marks
+26,tool marks
+27,flute casts
+28,gutter casts
+29,load casts
+30,flame structures
+31,ball-and-pillow
+32,soft sediment deformation
+33,graded-normal
+34,graded-inverse
+35,bioturbated
+36,bioturbated-weakly
+37,bioturbated-moderately
+38,bioturbated-thoroughly
+123,dish and pillar
+40,concretions-sideritic
+41,wrinkle structures
+42,concretions-calcareous
+43,nodular
+44,very fine
+45,fine
+46,medium
+47,coarse
+48,very coarse
+49,granule
+50,boulder
+51,sorted
+52,well sorted
+53,poorly sorted
+54,rounded
+55,well rounded
+56,subangular
+57,angular
+58,lithic
+59,pegmatitic
+60,porphyritic
+61,argillaceous
+62,shaly
+128,black
+64,silty
+65,sandy
+66,arkosic
+67,conglomeratic
+68,gravelly
+69,carbonaceous
+70,petroliferous
+71,micaceous
+72,cherty
+73,siliceous
+74,ferruginous
+75,hematitic
+76,phosphatic
+77,tuffaceous
+78,stromatolitic
+79,bentonitic
+80,calcareous
+81,diatomaceous
+82,dolomitic
+83,glauconitic
+84,intraclastic
+85,rip-up clasts
+86,ooidal
+87,peloidal
+88,pisolitic
+89,skeletal
+90,flat-pebble
+91,pyritic
+92,sideritic
+93,gypsiferous
+94,quartz
+95,olivine
+96,feldspar
+97,hornblende
+98,amphibole
+99,muscovite
+100,biotite
+101,mica
+102,brown
+103,light brown
+104,dark brown
+105,gray
+106,light gray
+107,dark gray
+108,green
+109,greenish gray
+110,greenish blue
+111,purple
+112,red
+113,reddish brown
+114,white
+115,yellow
+116,blue
+117,bluish gray
+118,mottled
+119,light
+120,dark
+121,foliated
+122,fluid escape structures
+124,thrombolitic
+125,convolute bedding
+126,pebbly
+127,chloritic
+129,yellowish brown
+130,reddish gray
+131,yellowish gray
+132,brownish red
+133,brownish gray
+134,oolitic
+135,tan
+136,pink
+137,aphanitic
+138,phaneritic
+139,manganese
+140,felsic
+141,mafic
+142,concretions-ironstone
+143,oncolitic
+144,concretions-phosphatic
+145,bioclastic
+146,burrowed
+147,concretionary
+148,graded bed
+149,reverse graded
+150,inverse graded
+151,feldspathic
+152,swaley cross stratification
+153,mud cracks
+154,muddy
+155,arenaceous
+156,clayey
+157,pelitic
+158,fenestral
+159,organic
+160,poorly washed
+161,cross stratification
+162,hummocky and swaley cross stratification
+163,fossiliferous
+164,parting lineation
+165,chossy
+168,encrinitic
+169,fractured
+170,brecciated
+171,vesicular
+172,amygdaloidal
+173,botryoidal
+174,vuggy
+175,saprolitic
+177,diatom
+178,radiolarian
+179,nannofossil
+180,foraminifer
+181,ultramafic
+182,basaltic
+183,serpentinized
+184,zeolitic
+185,spicular

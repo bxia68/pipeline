@@ -18,7 +18,7 @@ message Triplet {
 }
 
 message ParagraphResponse {
-    bool status = 1;
+    bool error = 1;
     repeated Triplet relationships = 2;
     string model_used = 3;
 } 

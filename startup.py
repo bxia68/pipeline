@@ -1,173 +1,150 @@
 import subprocess as sp
 import time
-import argparse
+import yaml
 
-# can optimize with async subprocesses
-# def get_gpu_memory(hostname: str) -> list[int]:
-#     command = f"ssh wjxia@{hostname}.chtc.wisc.edu nvidia-smi --query-gpu=memory.free --format=csv"
-#     output = sp.check_output(command.split(), timeout=0.5, encoding="utf-8")
-#     memory_free_info = output.split("\n")[:-1][1:]
-#     memory_free_values = [int(x.split()[0]) for _, x in enumerate(memory_free_info)]
-#     return memory_free_values
+def clear_services():
+    service_ids = sp.check_output(["docker", "service", "ls", "-q"], encoding="utf-8").strip()
 
-service_ids = sp.check_output(
-    ["docker", "service", "ls", "-q"], encoding="utf-8"
-).strip()
+    if service_ids:
+        # Split the service IDs into a list
+        service_id_list = service_ids.split("\n")
 
-if service_ids:
-    # Split the service IDs into a list
-    service_id_list = service_ids.split("\n")
+        # Remove each service
+        for service_id in service_id_list:
+            sp.run(["docker", "service", "rm", service_id])
 
-    # Remove each service
-    for service_id in service_id_list:
-        sp.run(["docker", "service", "rm", service_id])
-        print(f"Removed service {service_id}")
+    # wait for llms to free memory
+    time.sleep(8)
 
 
-HOSTNAMES = ["cosmos0001", "cosmos0002", "cosmos0003"]
-MANAGER_NODE = "cosmos0003"
-WORKER_REPLICAS = 2
+if __name__ == "__main__":
+    clear_services()
+    
+    # Read manager node and replicas from service.yml
+    with open('service.yml', 'r') as f:
+        service_config = yaml.safe_load(f)
 
-# DATA_DIR = "/data/sample"
+    master_node = service_config["master_node"]
+    worker_replicas = service_config["worker_replicas"]
 
+    service_list = service_config["service_list"]
 
-# service_list = []
-# for host in HOSTNAMES:
-#     try:
-#         gpu_list = get_gpu_memory(host)
-#         for i in range(len(gpu_list)):
-#             service_list.append({"host": host, "gpu_id": i, "free_mem": gpu_list[i]})
-#     except sp.TimeoutExpired:
-#         print(f"Could not connect to {host}")
+    if worker_replicas > len(service_list):
+        raise Exception(
+            f"Only {len(service_list)} gpu nodes available but {worker_replicas} replicas were specified."
+        )
 
+    # build and push images
+    sp.run("docker build -f node.Dockerfile -t bxia68/macrostrat:node .".split())
+    sp.run("docker push bxia68/macrostrat:node".split())
+    sp.run("docker build -f postgres.Dockerfile -t pipeline_postgres .".split())
 
-# service_list.sort(key=lambda x: x["free_mem"], reverse=True)
-service_list = [
-    # {
-    #     "host": "cosmos0001",
-    #     "gpu_id": 0,
-    # },
-    # {
-    #     "host": "cosmos0002",
-    #     "gpu_id": 0,
-    # },
-    {
-        "host": "cosmos0003",
-        "gpu_id": 0,
-    },
-    {
-        "host": "cosmos0003",
-        "gpu_id": 1,
-    },
-]
+    master_command = """
+    docker service create \
+        --replicas 1 \
+        --name master \
+        --restart-condition none \
+        --constraint node.hostname=={master_node}.chtc.wisc.edu \
+        --mount type=bind,source=/home/wjxia/dev/data/,destination=/data \
+        --mount type=bind,source=/home/wjxia/dev/pipeline/output,destination=/output \
+        --with-registry-auth \
+        -e WORKER_NAMES=[{worker_list}] \
+        -d \
+        --network pipeline-network \
+        bxia68/macrostrat:node \
+        python3.10 master.py
+    """
 
-if WORKER_REPLICAS > len(service_list):
-    raise Exception(
-        f"Only {len(service_list)} gpu nodes available but {WORKER_REPLICAS} replicas were specified."
-    )
+    # worker_container_command = """
+    # docker service create \
+    #     --replicas 1 \
+    #     --name worker_{worker_node}_{gpu_id} \
+    #     --restart-condition none \
+    #     --constraint node.hostname=={worker_node}.chtc.wisc.edu \
+    #     --with-registry-auth \
+    #     -e GPU_ID={gpu_id} \
+    #     -e CUDA_VISIBLE_DEVICES={gpu_id} \
+    #     --network pipeline-network \
+    #     -e HOST_NAME={worker_node} \
+    #     -d \
+    #     bxia68/macrostrat:worker
+    # """
 
-sp.run("docker build -f node.Dockerfile -t bxia68/macrostrat:node .".split())
+    # llm_command = """
+    # docker service create \
+    #     --replicas 1 \
+    #     --name llm_backend_{worker_node}_{gpu_id} \
+    #     --restart-condition none \
+    #     --constraint node.hostname=={worker_node}.chtc.wisc.edu \
+    #     --with-registry-auth \
+    #     -d \
+    #     --network pipeline-network \
+    #     --mount type=bind,source=/home/wjxia/dev/models,destination=/models \
+    #     -e CUDA_VISIBLE_DEVICES={gpu_id} \
+    #     llama.cpp \
+    #     --server --host 0.0.0.0 -m /models/c4ai-command-r-v01-Q5_K_M.gguf --n-gpu-layers 41 -c 2000 -n 4000
+    # """
 
-sp.run("docker push bxia68/macrostrat:node".split())
+    db_command = f"""
+    docker service create \
+        --replicas 1 \
+        --name postgres \
+        --constraint node.hostname=={master_node}.chtc.wisc.edu \
+        --restart-condition none \
+        --network pipeline-network \
+        -d \
+        -p 5432:5432 \
+        pipeline_postgres
+    """
 
-# docker build -f pgvector.Dockerfile -t bxia68/macrostrat:pgvector .
+    # run db
+    sp.run(db_command.split())
+    
+    # Read services from containers.yml
+    with open('containers.yml', 'r') as f:
+        container_config = yaml.safe_load(f)
+    containers = container_config.get("containers", {})
 
-# for i in range(WORKER_REPLICAS):
-#     # host_name = service_list[i]["host"]
-#     host_name = "cosmos0003"
-#     gpu_id = service_list[i]["gpu_id"]
+    # Run worker_command for each service
+    for container_name, container_data in containers.items():
+        for service in service_list:
+            worker_command = """
+            docker service create \
+                --replicas 1 \
+                --name {container_name}_{worker_node}_{gpu_id} \
+                --restart-condition none \
+                --constraint node.hostname=={worker_node}.chtc.wisc.edu \
+                --with-registry-auth \
+                -e GPU_ID={gpu_id} \
+                -e CUDA_VISIBLE_DEVICES={gpu_id} \
+                -e HOST_NAME={worker_node} \
+                --network pipeline-network \
+                {mount} \
+                -d \
+                {image} \
+                {settings}
+            """
+            mount = ""
+            if "mount" in container_data:
+                mount_data = container_data["mount"].split(":")
+                mount = f"--mount type=bind,source={mount_data[0]},destination={mount_data[1]}"
 
+            sp.run(
+                worker_command.format(
+                    container_name=container_name,
+                    gpu_id=service.get("gpu_id", ""),
+                    worker_node=service.get("host", ""),
+                    image=container_data.get("image", ""),
+                    mount=mount,
+                    settings=container_data.get("settings", "")
+                ).split()
+            )
 
-# gpu_id = 1
+    worker_list = [
+        f"\"worker_{service['host']}_{service['gpu_id']}\"" for service in service_list
+    ]
 
+    # run master
+    sp.run(master_command.format(master_node=master_node, worker_list=",".join(worker_list)).split())
 
-master_command = """
-docker service create \
-    --replicas 1 \
-    --name master \
-    --restart-condition none \
-    --constraint node.hostname==cosmos0003.chtc.wisc.edu \
-    --mount type=bind,source=/home/wjxia/dev/data/,destination=/data \
-    --with-registry-auth \
-    -e WORKER_NAMES=[{worker_list}] \
-    --network bridge \
-    -d \
-    --network macrostrat-network \
-    bxia68/macrostrat:node \
-    python3.10 master.py
-"""
-
-worker_command = """
-docker service create \
-    --replicas 1 \
-    --name worker_{worker_node}_{gpu_id} \
-    --restart-condition none \
-    --constraint node.hostname=={worker_node}.chtc.wisc.edu \
-    --with-registry-auth \
-    -e DB_HOST=pgvector \
-    -e GPU_ID={gpu_id} \
-    --network macrostrat-network \
-    --network bridge \
-    -e HOST_NAME={worker_node} \
-    --dns 8.8.8.8
-    -d \
-    bxia68/macrostrat:node \
-    python3.10 worker.py
-"""
-
-
-llm_command = """
-docker service create \
-    --replicas 1 \
-    --name llm_backend_{worker_node}_{gpu_id} \
-    --restart-condition none \
-    --constraint node.hostname=={worker_node}.chtc.wisc.edu \
-    --with-registry-auth \
-    -d \
-    --network macrostrat-network \
-    --mount type=bind,source=/home/wjxia/dev/models,destination=/models \
-    -e CUDA_VISIBLE_DEVICES={gpu_id} \
-    llama.cpp \
-    --server --host 0.0.0.0 -m /models/c4ai-command-r-v01-Q5_K_M.gguf --n-gpu-layers 41 -c 2000
-"""
-# --server --host 0.0.0.0 -m /models/starling-lm-7b-alpha.Q6_K.gguf --n-gpu-layers 35
-# --server --host 0.0.0.0 -m /models/neuralhermes-2.5-mistral-7b.Q6_K.gguf --n-gpu-layers 35
-
-db_command = f"""
-docker service create \
-    --replicas 1 \
-    --name pgvector \
-    --constraint node.hostname=={MANAGER_NODE}.chtc.wisc.edu \
-    --restart-condition none \
-    --network macrostrat-network \
-    -d \
-    -p 5432:5432
-    pgvector
-"""
-
-sp.run(db_command.split())
-
-# time.sleep(1)
-# for service in service_list:
-#     sp.run(
-#         llm_command.format(
-#             worker_node=service["host"], gpu_id=service["gpu_id"]
-#         ).split()
-#     )
-#     sp.run(
-#         worker_command.format(
-#             worker_node=service["host"], gpu_id=service["gpu_id"]
-#         ).split()
-#     )
-
-time.sleep(5)
-
-worker_list = [
-    f"\"worker_{service['host']}_{service['gpu_id']}\"" for service in service_list
-]
-
-sp.run(master_command.format(worker_list=",".join(worker_list)).split())
-
-# sp.run("docker service logs pgvector".split())
-# sp.run("docker service logs worker_cosmos0003".split())
-sp.run("docker service logs master -f".split())
+    sp.run("docker service logs master -f".split())

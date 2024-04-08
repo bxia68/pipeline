@@ -1,0 +1,7 @@
+containers:
+  worker:
+    image: bxia68/macrostrat:worker
+  llm_backend:
+    image: llama.cpp
+    mount: /home/wjxia/dev/models:/models
+    settings: --server --host 0.0.0.0 -m /models/c4ai-command-r-v01-Q5_K_M.gguf --n-gpu-layers 41 -c 2000 -n 4000

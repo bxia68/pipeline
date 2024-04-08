@@ -1,0 +1,11 @@
+worker_replicas: 2
+master_node: cosmos0003
+service_list:
+  # - host: cosmos0001
+  #   gpu_id: 0
+  # - host: cosmos0002
+  #   gpu_id: 0
+  - host: cosmos0003
+    gpu_id: 0
+  - host: cosmos0003
+    gpu_id: 1
