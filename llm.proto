@@ -1,0 +1,24 @@
+syntax="proto3";
+
+service LLMServer {
+    rpc ChatCompletion(ChatRequest) returns (ChatResponse) {}
+    rpc Embedding(EmbeddingRequest) returns (EmbeddingResponse) {}
+}
+
+message ChatRequest {
+    string system_text = 1;
+    string user_text = 2;
+}
+
+message ChatResponse {
+    string text = 1;
+}
+
+message EmbeddingRequest {
+    string text = 1;
+    bool is_query = 2;
+}
+
+message EmbeddingResponse {
+    repeated float embedding = 1;
+}

@@ -1,0 +1,35 @@
+services:
+    # nb:
+    #     image: nb
+    #     environment:
+    #         - JUPYTER_TOKEN=local
+    #     ports:
+    #         - "8000:8888"
+    #     volumes:
+    #         - "./nb:/home/jovyan/nb"
+
+    postgres:
+        image: pgvector
+        ports:
+            - "127.0.0.1:5432:5432"
+
+    worker-1:
+        image: node
+        depends_on:
+            - "postgres"
+        command: python3 worker.py
+
+    worker-2:
+        image: node
+        depends_on:
+            - "postgres"
+        command: python3 worker.py
+
+    master:
+        image: node
+        command: bash -c "python3 master.py worker-1 worker-2"
+        volumes:
+            - "./data:/data"
+        depends_on:
+            - "worker-1"
+            - "worker-2"
