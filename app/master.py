@@ -28,6 +28,12 @@ RELATION_MAP = {
     }
 }
 
+ID_MAPPINGS = {
+    "liths": pd.read_csv("liths.csv", header=None),
+    "lith_atts": pd.read_csv("lith_atts.csv", header=None),
+    "strat": pd.read_csv("strat.csv", header=None)
+}
+
 @dataclass
 class Progress:
     output: str = "MASTER: Finished %s."
@@ -51,11 +57,6 @@ async def read_file(queue: asyncio.Queue, consumer_count: int) -> None:
 
     logging.info("MASTER: All paragraphs have been read.")
 
-ID_MAPPINGS = {
-    "liths": pd.read_csv("liths.csv", header=None),
-    "lith_atts": pd.read_csv("lith_atts.csv", header=None),
-    "strat": pd.read_csv("strat.csv", header=None)
-}
 
 def find_match(name_type, name):
     df = ID_MAPPINGS[name_type]
@@ -83,7 +84,6 @@ async def process_paragraph(
                     workerserver_pb2.ParagraphRequest(paragraph=item.paragraph)
                 )
 
-                # logging.info(response)
                 source_id = None
                 if not response.error:
                     for triplet in response.relationships:
@@ -206,7 +206,7 @@ async def init_db():
                 search_strat_name character varying(3181),
                 search_strat_id integer,
                 article_id character varying(3181),
-                paragraph_txt character varying(3181)
+                paragraph_txt text
             );
             """,
         )
