@@ -1,0 +1,37 @@
+# This is the redis queue server
+
+version: '3'
+services:
+  redis:
+    image: redis:7.2 # 7.4 will become non-BSD license
+    ports:
+      - 6379:6379
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+  manager:
+    image: ghcr.io/bxia68/pipeline:latest
+    # image: test_queue
+    build: .
+    ports:
+      - 4502:4502
+    depends_on:
+      - redis
+    environment:
+      REDIS_HOST: redis # for serving in the same network
+      # REDIS_HOST: ${REDIS_HOST}  # for testing in different network
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # API_KEY: ${API_KEY}
+    command: python3 -u manager.py
+  worker:
+    image: ghcr.io/bxia68/pipeline:latest
+    depends_on:
+      - redis
+    environment:
+      REDIS_HOST: redis # for serving in the same network
+      # REDIS_HOST: ${REDIS_HOST}  # for testing in different network
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # API_KEY: ${API_KEY}
+    command: arq manager.WorkerSettings

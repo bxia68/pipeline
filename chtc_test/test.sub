@@ -1,0 +1,33 @@
+JobBatchName            = "LLM worker"
+
+# Environment
+universe                = docker
+docker_image            = ghcr.io/bxia68/pipeline:latest
+docker_network_type     = host
+
+# Artefact
+# Requirements            = (Target.HasCHTCStaging == true)
+executable              = main.sh
+should_transfer_files   = YES
+transfer_input_files    = main.sh
+transfer_output_files   = ""
+
+# Logging
+stream_output           = true
+output                  = condor_log/output.$(Cluster)-$(Process).txt
+error                   = condor_log/error.$(Cluster)-$(Process).txt
+log                     = condor_log/log.$(Cluster)-$(Process).txt
+
+# Compute resources
+request_cpus            = 2
+request_memory          = 32GB
+request_disk            = 50GB
+
+# Extra GPU settings
+# request_gpus            = 1
+# require_gpus            = GlobalMemoryMb >= 30000
+# Requirements            = (Target.CUDADriverVersion >= 10.1)
+# +WantGPULab             = true
+# +GPUJobLength           = "short"
+
+queue 1
